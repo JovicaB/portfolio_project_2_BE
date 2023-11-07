@@ -254,6 +254,36 @@ class PortfolioData:
         return statistics
 
 
+class ModelAddCredit:
+    """
+    A class for saving credit data to the database
+    """
+    def __init__(self) -> None:
+        self.database = DatabaseManager('mysql')
+
+    def add_new_credit(self, input_data):
+        """
+        Adds a new credit entry to the database.
+
+        Parameters:
+        - input_data (list): A list containing credit data to be added. The list should have the following format:
+          [debtor_name, credit_value, interest_rate, credit_life, collateral_name, collateral_value, collateral_cat, risk, risk_status, ponder_status]
+
+        Returns:
+        str: A message confirming that the credit has been successfully added.
+        """
+        credit_approval_year = datetime.date.today().year
+        input_data.insert(4, credit_approval_year)
+        data = tuple(input_data,)
+
+        sql_query = "INSERT INTO p2_credit_portfolio (debtor_name, credit_value, interest_rate, credit_life, credit_approval_year, collateral_name, collateral_value, collateral_cat, risk, risk_status, ponder_status) " \
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s,  %s,  %s)"
+
+        self.database.save_data(sql_query, data)
+
+        return 'credit added'
+
+
 class RiskCalculation:
     """
     A class for weighted average risk calculation
