@@ -252,3 +252,23 @@ class PortfolioData:
             weighted_average_portfolio_risk
         ]
         return statistics
+
+
+class RiskCalculation:
+    """
+    A class for weighted average risk calculation
+    """
+    def __init__(self) -> None:
+        self.database = DatabaseManager('mysql')
+        self.risk_data = self.database.read_data('p2_risk_weights')
+        self.risk_status = self.risk_data[0][1]
+        self.weight_status = self.risk_data[0][2]
+
+    def weighted_risk_calculation(self):
+        '''
+        calculates weighted average credit risk
+        '''
+        risk = [int(x)/100 for x in self.risk_status.split(':')]
+        weight = [int(x)/100 for x in self.weight_status.split(':')]
+        weighted_risk = round(sum([x * y for x, y in zip(risk, weight)]), 2)
+        return weighted_risk
