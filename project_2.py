@@ -272,3 +272,83 @@ class RiskCalculation:
         weight = [int(x)/100 for x in self.weight_status.split(':')]
         weighted_risk = round(sum([x * y for x, y in zip(risk, weight)]), 2)
         return weighted_risk
+
+
+class WeightsCalibration:
+    """
+    A class for setting weight relationships with a sum strength of 1. 
+    It addresses the challenge of equal distribution of positive and negative values from an HTML input slider by randomizing the weight iterator.
+    """
+    def __init__(self, input_data) -> None:
+        self.database = DatabaseManager('mysql')
+        self.input_data = input_data
+        self.weight_index = self.input_data[0] - 1
+        self.modified_weights_status = [
+            int(x) for x in self.input_data[1].split(':')]
+
+    def set_iterator(self):
+        """
+        Defines a random iterator list without the element that is selected.
+        """
+        raw_seq = [0, 1, 2, 3, 4]
+        raw_seq.remove(self.weight_index)
+        random.shuffle(raw_seq)
+
+        return raw_seq
+
+    def weights_calibration(self):
+        """
+        Calibrates weights based on changes in the chosen ponder value.
+
+        Returns:
+        list: Updated weights status after calibration.
+        """
+        sequence = self.set_iterator()
+        value_to_distribute = 100 - sum(self.modified_weights_status)
+        while value_to_distribute != 0:
+            if value_to_distribute > 0:
+                for i in sequence:
+                    self.modified_weights_status[i] += 1
+                    value_to_distribute -= 1
+                    if value_to_distribute == 0:  
+                        break
+            else:
+                for i in reversed(sequence):
+                    self.modified_weights_status[i] -= 1
+                    value_to_distribute += 1
+                    if value_to_distribute == 0: 
+                        break
+        return self.modified_weights_status
+
+
+class ModelWeightsStatus:
+    """
+    A class for managing weights status (reading/saving)
+    """
+    def __init__(self) -> None:
+        self.database = DatabaseManager('mysql')
+        self.weight_data = self.database.read_data('p2_risk_weights')[0]
+
+    def get_weights_status(self):
+        """
+        Retrieves the current weights status.
+
+        Returns:
+        list: Current weights status.
+        """
+        return self.weight_data[2]
+
+    def set_weights_status(self, weights_status):
+        '''
+        Saves the calibration of the risk weights.
+
+        Parameters:
+        - weights_status (list): A list representing the updated weights status.
+
+        Returns:
+        str: A message indicating that the weights status has been updated.
+        '''
+        sql_query = "UPDATE p2_risk_weights SET weights = %s WHERE id = %s"
+        data = (weights_status, 1)
+        self.database.save_data(sql_query, data)
+        return 'Weights status updated'
