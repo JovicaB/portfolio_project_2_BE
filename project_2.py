@@ -158,3 +158,98 @@ class ECL:
 
         ecl = round(ead * lgd * pd)
         return ecl
+
+
+
+class PortfolioData:
+    """
+    A class for structuring credit data for Credit portfolio screen [portfolio + statistics] 
+    """
+
+    def __init__(self) -> None:
+        self.database = DatabaseManager('mysql')
+        self.credit_data = self.database.read_data('p2_credit_portfolio')
+
+    def credit_life_left_calculation(self, credit_life, credit_approval_year):
+        '''
+        Calculates the remaining years of credit life.
+
+        Parameters:
+        - credit_life (int): The total lifespan of the credit.
+        - credit_approval_year (int): The year in which the credit was approved.
+
+        Returns:
+        int: The number of years left in the credit life.
+        '''
+        current_year = datetime.date.today().year
+        credit_life_left = credit_approval_year + credit_life - current_year
+        return credit_life_left
+
+    def credit_table_data(self):
+        '''
+        Displays credit data with ECL (Expected Credit Loss) calculation.
+
+        Returns:
+        list: A list of lists containing credit data with ECL calculations.
+        '''
+        ecl_data = []
+        idx = 1
+
+        for element in self.credit_data:
+            ecl = ECL(element[2], element[4], element[5],
+                      element[7], element[8], element[9])
+            credit_data = [
+                idx,
+                element[1],
+                round(element[2]),
+                round(element[3], 2),
+                element[4],
+                self.credit_life_left_calculation(element[4], element[5]),
+                element[8],
+                round(element[7]),
+                ecl.ead(),
+                ecl.lgd(),
+                ecl.pd(),
+                ecl.ecl_calculation()
+
+            ]
+            ecl_data.append(credit_data)
+            idx += 1
+        return ecl_data
+
+    def weighted_average_portfolio_risk(self, portolfio_risk, weights):
+        '''
+        Calculates the weighted average risk of a portfolio.
+
+        Parameters:
+        - portfolio_risk (list): A list of credit risks for the portfolio.
+        - weights (list): A list of weights for each credit in the portfolio.
+
+        Returns:
+        float: The weighted average portfolio risk.
+        '''
+        wapr = round(sum(x * y for x, y in zip(portolfio_risk, weights)), 2)
+        return wapr
+
+    def portfolio_statistics(self):
+        '''
+        Displays credit portfolio statistics including the number of credits, the gross value of the portfolio, the gross value of collateral, and the weighted average portfolio risk.
+
+        Returns:
+        list: A list of portfolio statistics.
+        '''
+        total_portfolio_credit_value = round(
+            sum(credit_data[2] for credit_data in self.credit_data))
+        credit_share_of_portfolio = [round(
+            credit_value[2] / total_portfolio_credit_value, 2) for credit_value in self.credit_data]
+        credit_risks = [credit_data[3] for credit_data in self.credit_data]
+        weighted_average_portfolio_risk = self.weighted_average_portfolio_risk(
+            credit_risks, credit_share_of_portfolio)
+
+        statistics = [
+            len(self.credit_data),
+            total_portfolio_credit_value,
+            round(sum(credit_data[7] for credit_data in self.credit_data)),
+            weighted_average_portfolio_risk
+        ]
+        return statistics
