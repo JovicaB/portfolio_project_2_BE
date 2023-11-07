@@ -160,7 +160,6 @@ class ECL:
         return ecl
 
 
-
 class PortfolioData:
     """
     A class for structuring credit data for Credit portfolio screen [portfolio + statistics] 
